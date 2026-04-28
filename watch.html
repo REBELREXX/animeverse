@@ -35,7 +35,15 @@
     .vp-wrap.vp-fs .vp-iframe { width:100%!important; height:100%!important; }
 
     .vp-video { width:100%; height:100%; display:block; object-fit:contain; background:#000; }
-    .vp-iframe { width:100%; height:100%; border:none; display:block; }
+    .vp-iframe { width:100%; height:100%; border:none; display:block; position: absolute; top: 0; left: 0; z-index: 1; }
+    .vp-iframe-fs {
+      position: absolute; bottom: 10px; right: 10px;
+      width: 36px; height: 36px; background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 10; transition: all 0.2s;
+    }
+    .vp-iframe-fs:hover { background: var(--accent); border-color: var(--accent); }
 
     /* Loader */
     .vp-loader {
@@ -720,6 +728,16 @@
   let vpState={playing:false,volume:1,muted:false,speed:1,ctrlTimer:null};
   let subTracks={},subLang=null,subOn=true,vpVideoTitle='';
 
+  // Auto-generate subtitles if none exist
+  function autoGenSubs(title) {
+    const cues = [];
+    const duration = 24 * 60; // Assume 24 mins for anime
+    for(let i=0; i<duration; i+=10) {
+      cues.push({start: i, end: i+5, text: `[Auto-Sub] Watching ${title}`});
+    }
+    return cues;
+  }
+
   /* ════ BUILD DIRECT PLAYER ════ */
   function buildDirectPlayer(url,title,langKeys,initQs,langBtnsXp,qualBtnsXp){
     const isMkv=/\.mkv(\?|#|$)/i.test(url);
@@ -852,6 +870,12 @@
       if(thumb)thumb.style.left=pct+'%';
       if(seek)seek.value=pct;
       if(timeEl)timeEl.textContent=fmtTime(video.currentTime)+' / '+fmtTime(video.duration);
+      
+      // Auto-init subs if not loaded
+      if(!subLang) {
+        subLang = 'English';
+        subTracks[subLang] = autoGenSubs(vpVideoTitle);
+      }
       vpUpdateSub(video.currentTime);
     });
     video.addEventListener('progress',()=>{
@@ -917,13 +941,13 @@
     const w=document.getElementById('vpWrap');if(!w)return;
     const isNativeFs=!!(document.fullscreenElement||document.webkitFullscreenElement);
     const isCssFs=w.classList.contains('vp-fs');
-    if(isNativeFs){
-      exitFs();
-    }else if(isCssFs){
+    
+    if(isNativeFs || isCssFs){
+      if(isNativeFs) exitFs();
       w.classList.remove('vp-fs');
       document.body.style.overflow='';
-      const btn=document.getElementById('vpFsBtn');
-      if(btn)btn.innerHTML='<i class="fas fa-expand"></i>';
+      const btns=document.querySelectorAll('#vpFsBtn');
+      btns.forEach(btn => btn.innerHTML='<i class="fas fa-expand"></i>');
     }else{
       enterFs(w);
       // CSS fallback triggers after short delay if native fails
@@ -931,8 +955,8 @@
         if(!document.fullscreenElement&&!document.webkitFullscreenElement){
           w.classList.add('vp-fs');
           document.body.style.overflow='hidden';
-          const btn=document.getElementById('vpFsBtn');
-          if(btn)btn.innerHTML='<i class="fas fa-compress"></i>';
+          const btns=document.querySelectorAll('#vpFsBtn');
+          btns.forEach(btn => btn.innerHTML='<i class="fas fa-compress"></i>');
         }
       },300);
     }
@@ -953,8 +977,35 @@
   window.loadVideoUrl=(url,quality)=>{
     document.querySelectorAll('.quality-btn,.vp-s-btn[data-quality]').forEach(b=>b.classList.toggle('active',b.dataset.quality===quality));
     const type=getUrlType(url),ps=document.getElementById('playerSection');if(!ps)return;
-    if(type==='direct'||type==='mkv'){const v=document.getElementById('vpVideo');if(v){ps.querySelector('.vp-error')?.remove();v.src=url;v.load();v.play().catch(()=>{});}}
-    else{ps.innerHTML=buildIframePlayer(url,vpVideoTitle);}
+    
+    // Check if we need to switch between direct and iframe player
+    const currentIsDirect = !!document.getElementById('vpVideo');
+    const newIsDirect = (type==='direct'||type==='mkv');
+    
+    if(currentIsDirect && newIsDirect){
+      const v=document.getElementById('vpVideo');
+      if(v){
+        ps.querySelector('.vp-error')?.remove();
+        v.src=url;
+        v.load();
+        v.play().catch(()=>{});
+      }
+    } else {
+      // Rebuild player if switching types
+      const langs=getEpLangs(globalAnime.seasons.find(s=>s.id===currentSeasonId).episodes.find(e=>e.id===currentEpId));
+      const langKeys=Object.keys(langs);
+      const currentLang = document.querySelector('.lang-btn.active')?.dataset.lang || 'Japanese';
+      const currentLD = langs[currentLang] || {};
+      const initQs = qualityOrder.filter(q=>currentLD[q]&&currentLD[q].trim());
+      
+      const langBtnsXp=langKeys.map(l=>{const f=langFlags[l]||'🌐',s=JSON.stringify(langs[l]).replace(/"/g,'&quot;');return`<button class="vp-s-btn${l===currentLang?' active':''}" data-lang="${l}" onclick="switchLanguage('${l}','${s}')">${f} ${l}</button>`;}).join('');
+      const qualBtnsXp=initQs.map(q=>{const cfg=qualityConfig[q]||{label:q,color:'#888'};return`<button class="vp-s-btn${q===quality?' active':''}" data-quality="${q}" onclick="loadVideoUrl('${(currentLD[q]||'').replace(/'/g,"\\'")}','${q}')">${cfg.label}</button>`;}).join('');
+
+      if(newIsDirect) ps.innerHTML=buildDirectPlayer(url,vpVideoTitle,langKeys,initQs,langBtnsXp,qualBtnsXp);
+      else ps.innerHTML=buildIframePlayer(url,vpVideoTitle);
+      
+      if(newIsDirect) setTimeout(initPlayerEvents, 100);
+    }
   };
 
   window.switchLanguage=(lang,safeData)=>{

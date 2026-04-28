@@ -284,7 +284,17 @@ a { text-decoration: none; color: inherit; }
 .see-all:hover { color: var(--accent); }
 
 /* ===== GLOBAL GRID ENFORCEMENT ===== */
-.grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 14px;
+  animation: fadeUp 0.6s ease-out both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Remove 3-col mobile override — 2 col everywhere */
 @media (max-width: 768px) {

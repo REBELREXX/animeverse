@@ -239,6 +239,10 @@ a { text-decoration: none; color: inherit; }
   text-transform: uppercase;
   box-shadow: 0 3px 0 var(--btn-3d), 0 4px 8px var(--shadow);
   position: relative;
+  /* GPU layer — prevents animation re-trigger on mobile fast scroll */
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* ===== NOTIFICATION DOT ===== */
@@ -1324,15 +1328,19 @@ a { text-decoration: none; color: inherit; }
 .top10-item:nth-child(10) { animation-delay: 0.38s; }
 
 /* ── Category pills ── */
+/* fill-mode: forwards (NOT both) — prevents opacity:0 "backwards-fill"
+   that causes pills to vanish when mobile Chrome resets compositor layers
+   during fast scroll. With forwards: pre-animation state = natural CSS
+   (opacity:1), so pills are always visible even if animation restarts. */
 .pill {
-  animation: avFadeUp 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: avFadeUp 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.pill:nth-child(1) { animation-delay: 0.02s; }
-.pill:nth-child(2) { animation-delay: 0.06s; }
-.pill:nth-child(3) { animation-delay: 0.10s; }
-.pill:nth-child(4) { animation-delay: 0.14s; }
-.pill:nth-child(5) { animation-delay: 0.18s; }
-.pill:nth-child(n+6) { animation-delay: 0.22s; }
+.pill:nth-child(1) { animation-delay: 0s; }
+.pill:nth-child(2) { animation-delay: 0.04s; }
+.pill:nth-child(3) { animation-delay: 0.08s; }
+.pill:nth-child(4) { animation-delay: 0.12s; }
+.pill:nth-child(5) { animation-delay: 0.16s; }
+.pill:nth-child(n+6) { animation-delay: 0.20s; }
 
 /* ── Anime detail page ── */
 .anime-poster-wrap {
@@ -1414,14 +1422,17 @@ a { text-decoration: none; color: inherit; }
 .pf-action-btn:nth-child(3) { animation-delay: 0.15s; }
 .pf-action-btn:nth-child(4) { animation-delay: 0.20s; }
 
-/* ── Pagination buttons ── */
+/* ── Pagination buttons ──
+   Animation handled in JS (renderPageButtons) via requestAnimationFrame
+   to avoid the 0.25s invisible gap that happens when innerHTML is reset
+   and new buttons get CSS animation with fill-mode:both + delay */
 #paginationWrap button {
-  animation: avFadeUp 0.30s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+  /* no CSS animation here — see renderPageButtons in app.js */
 }
 
 /* ── Section titles ── */
 .section-title {
-  animation: avFadeUp 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.02s both;
+  animation: avFadeUp 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.02s forwards;
 }
 
 /* ── Respect reduced-motion accessibility preference ── */

@@ -759,6 +759,25 @@ function renderPageButtons(current, total) {
   });
 
   wrap.appendChild(container);
+
+  /* JS-based fade-in for pagination buttons — replaces the removed CSS
+     animation that had a 0.25s delay with fill-mode:both, causing buttons
+     to be invisible (opacity:0) for 250ms every time they were recreated.
+     Using requestAnimationFrame ensures the DOM is painted first, then
+     we apply the transition — no invisible gap at all. */
+  const allBtns = container.querySelectorAll('button');
+  allBtns.forEach((b, i) => {
+    b.style.opacity = '0';
+    b.style.transform = 'translateY(14px)';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        b.style.transition = 'opacity 0.22s ease, transform 0.22s cubic-bezier(0.22,1,0.36,1)';
+        b.style.transitionDelay = (i * 0.04) + 's';
+        b.style.opacity = '1';
+        b.style.transform = 'translateY(0)';
+      });
+    });
+  });
 }
 
 function buildPageList(current, total) {

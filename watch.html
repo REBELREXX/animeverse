@@ -35,13 +35,13 @@
     .vp-wrap.vp-fs .vp-iframe { width:100%!important; height:100%!important; }
 
     .vp-video { width:100%; height:100%; display:block; object-fit:contain; background:#000; }
-    .vp-iframe { width:100%; height:100%; border:none; display:block; position: absolute; top: 0; left: 0; z-index: 1; }
+    .vp-iframe { width:100%; height:100%; border:none; display:block; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: auto; }
     .vp-iframe-fs {
       position: absolute; bottom: 10px; right: 10px;
       width: 36px; height: 36px; background: rgba(0,0,0,0.6);
       border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
       color: #fff; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; z-index: 10; transition: all 0.2s;
+      cursor: pointer; z-index: 100; transition: all 0.2s;
     }
     .vp-iframe-fs:hover { background: var(--accent); border-color: var(--accent); }
 
@@ -693,8 +693,40 @@
   function hasEpTg(ep){if(!ep)return false;if(ep.telegramLinks&&Object.values(ep.telegramLinks).some(v=>v&&v.trim()))return true;if(ep.telegramUrl&&ep.telegramUrl.trim())return true;return false;}
   function getEpLangs(ep){if(ep.languages&&Object.keys(ep.languages).length>0){const f={};Object.entries(ep.languages).forEach(([l,qm])=>{if(qm&&Object.values(qm).some(u=>u&&u.trim()))f[l]=qm;});if(Object.keys(f).length)return f;}if(ep.videoUrls)return{'Japanese':ep.videoUrls};if(ep.videoUrl)return{'Japanese':{'720p':ep.videoUrl}};return{};}
   function getBest(ld){for(const q of qualityOrder)if(ld[q]&&ld[q].trim())return q;return Object.keys(ld||{})[0]||'';}
-  function getUrlType(url){if(!url||!url.trim())return null;url=url.trim();if(url.includes('youtube.com/watch')||url.includes('youtu.be/')||url.includes('youtube.com/embed'))return'youtube';if(url.includes('drive.google.com'))return'drive';if(url.match(/\.(mp4|webm|ogg|m3u8|mov)(\?|#|$)/i))return'direct';if(url.match(/\.mkv(\?|#|$)/i))return'mkv';if(url.includes('streamtape.com')||url.includes('streamtape.net'))return'streamtape';if(url.includes('cloudfront.net')||url.includes('akamaized.net')||url.includes('b-cdn.net'))return'direct';return'iframe';}
-  function getEmbedSrc(url){const t=getUrlType(url);if(t==='youtube'){if(url.includes('youtu.be/')){const id=url.split('youtu.be/')[1].split('?')[0];return`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;}try{const id=new URL(url).searchParams.get('v');if(id)return`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;}catch{}}if(t==='drive'){const m1=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/),m2=url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/),id=m1?m1[1]:(m2?m2[1]:null);if(id)return`https://drive.google.com/file/d/${id}/preview?usp=sharing`;}if(t==='streamtape'){const m=url.match(/\/(?:v|e|video|stream)\/([a-zA-Z0-9_-]+)/);if(m)return`https://streamtape.com/e/${m[1]}/`;}return url;}
+  function getUrlType(url){
+    if(!url||!url.trim())return null;
+    url=url.trim();
+    if(url.includes('youtube.com/watch')||url.includes('youtu.be/')||url.includes('youtube.com/embed'))return'youtube';
+    if(url.includes('drive.google.com'))return'drive';
+    if(url.includes('gofile.io/download/direct'))return'direct';
+    if(url.match(/\.(mp4|webm|ogg|m3u8|mov)(\?|#|$)/i))return'direct';
+    if(url.match(/\.mkv(\?|#|$)/i))return'mkv';
+    if(url.includes('streamtape.com')||url.includes('streamtape.net'))return'streamtape';
+    if(url.includes('cloudfront.net')||url.includes('akamaized.net')||url.includes('b-cdn.net'))return'direct';
+    return'iframe';
+  }
+  function getEmbedSrc(url){
+    const t=getUrlType(url);
+    if(t==='youtube'){
+      if(url.includes('youtu.be/')){
+        const id=url.split('youtu.be/')[1].split('?')[0];
+        return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+      }
+      try{
+        const id=new URL(url).searchParams.get('v');
+        if(id)return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+      }catch{}
+    }
+    if(t==='drive'){
+      const m1=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/),m2=url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/),id=m1?m1[1]:(m2?m2[1]:null);
+      if(id)return `https://drive.google.com/file/d/${id}/preview?usp=sharing`;
+    }
+    if(t==='streamtape'){
+      const m=url.match(/\/(?:v|e|video|stream)\/([a-zA-Z0-9_-]+)/);
+      if(m)return `https://streamtape.com/e/${m[1]}/`;
+    }
+    return url;
+  }
   function fmtTime(s){if(!isFinite(s)||s<0)return'0:00';const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60);if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${m}:${String(sec).padStart(2,'0')}`;}
   function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function showToast(msg){const t=document.getElementById('vp-toast');if(!t)return;t.textContent=msg;t.style.opacity='1';clearTimeout(t._tmr);t._tmr=setTimeout(()=>{t.style.opacity='0';},2500);}
@@ -809,10 +841,15 @@
 
   function buildIframePlayer(url,title){
     const src=getEmbedSrc(url);
-    return `<div class="vp-wrap" id="vpWrap" style="aspect-ratio:16/9">
+    const isDrive = url.includes('drive.google.com');
+    return `<div class="vp-wrap" id="vpWrap" style="aspect-ratio:16/9; background:#000;">
       <iframe class="vp-iframe" src="${src}" allowfullscreen webkitallowfullscreen
-        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>
-      <button class="vp-iframe-fs" id="vpFsBtn" onclick="vpToggleFs()">
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        style="${isDrive ? 'width:100%; height:100%; position:absolute; top:0; left:0; border:none;' : ''}"></iframe>
+      <div class="vp-controls" style="pointer-events:none; background:transparent; z-index:10;">
+        <div class="vp-top" style="pointer-events:auto;"><span class="vp-top-title">${escHtml(title)}</span></div>
+      </div>
+      <button class="vp-iframe-fs" id="vpFsBtn" onclick="vpToggleFs()" title="Toggle Fullscreen">
         <i class="fas fa-expand"></i>
       </button>
     </div>`;

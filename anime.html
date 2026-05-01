@@ -173,7 +173,8 @@
     }
 
     function copyAnimeLink(id) {
-      const url = `${window.location.origin}${window.location.pathname}?id=${id}`;
+      // Telegram Mini App Link Format: https://t.me/VerseFileShareBot/VERSE?startapp=[id]
+      const url = `https://t.me/VerseFileShareBot/VERSE?startapp=${id}`;
       navigator.clipboard.writeText(url).then(() => {
         const btn = document.getElementById('shareBtn');
         const oldHTML = btn.innerHTML;

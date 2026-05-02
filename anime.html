@@ -673,7 +673,7 @@
             animation:recIn 0.4s ease ${i*0.08}s forwards;
             display:flex;flex-direction:column`;
           card.innerHTML = `
-            <img src="${a.thumbnail||''}" alt="${a.title}"
+            <img src="${a.banner || a.thumbnail || ''}" alt="${a.title}"
               style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--bg3)"
               onerror="this.style.background='var(--bg3)'"/>
             <div style="padding:8px;flex:1;display:flex;flex-direction:column">

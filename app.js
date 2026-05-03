@@ -14,11 +14,29 @@ function toggleTheme() {
   const html = document.documentElement;
   const btn  = document.getElementById('themeBtn');
   const dark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', dark ? 'light' : 'dark');
-  if (btn) btn.innerHTML = dark
-    ? '<i class="fas fa-sun"></i>'
-    : '<i class="fas fa-moon"></i>';
-  localStorage.setItem('av_theme', dark ? 'light' : 'dark');
+
+  const applyTheme = () => {
+    html.setAttribute('data-theme', dark ? 'light' : 'dark');
+    if (btn) btn.innerHTML = dark
+      ? '<i class="fas fa-sun"></i>'
+      : '<i class="fas fa-moon"></i>';
+    localStorage.setItem('av_theme', dark ? 'light' : 'dark');
+  };
+
+  if (!document.startViewTransition) { applyTheme(); return; }
+
+  const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth/2, top: 30, width: 0, height: 0 };
+  const x = rect.left + rect.width  / 2;
+  const y = rect.top  + rect.height / 2;
+  const maxR = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+  const transition = document.startViewTransition(applyTheme);
+  transition.ready.then(() => {
+    document.documentElement.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${maxR}px at ${x}px ${y}px)`] },
+      { duration: 550, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' }
+    );
+  });
 }
 function loadTheme() {
   const saved = localStorage.getItem('av_theme') || 'dark';

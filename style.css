@@ -382,7 +382,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 .card-img-wrap {
-  position: relative; aspect-ratio: 16/10; background: var(--bg3);
+  position: relative; aspect-ratio: 1/1; background: var(--bg3);
   overflow: hidden;
 }
 .card-img-wrap img {

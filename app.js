@@ -14,28 +14,36 @@ function toggleTheme() {
   const html = document.documentElement;
   const btn  = document.getElementById('themeBtn');
   const dark = html.getAttribute('data-theme') === 'dark';
+  const nextTheme = dark ? 'light' : 'dark';
 
-  const applyTheme = () => {
-    html.setAttribute('data-theme', dark ? 'light' : 'dark');
-    if (btn) btn.innerHTML = dark
-      ? '<i class="fas fa-sun"></i>'
-      : '<i class="fas fa-moon"></i>';
-    localStorage.setItem('av_theme', dark ? 'light' : 'dark');
-  };
-
-  if (!document.startViewTransition) { applyTheme(); return; }
-
+  // Get button center for ripple origin
   const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth/2, top: 30, width: 0, height: 0 };
   const x = rect.left + rect.width  / 2;
   const y = rect.top  + rect.height / 2;
   const maxR = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 
-  const transition = document.startViewTransition(applyTheme);
-  transition.ready.then(() => {
-    document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${maxR}px at ${x}px ${y}px)`] },
-      { duration: 550, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', pseudoElement: '::view-transition-new(root)' }
-    );
+  // Create ripple overlay that screenshots current page
+  const ripple = document.createElement('div');
+  ripple.id = 'theme-ripple';
+  ripple.style.cssText = `
+    position:fixed;inset:0;z-index:99999;pointer-events:none;
+    background:${nextTheme === 'dark' ? '#000F08' : '#F7F7FF'};
+    clip-path:circle(0px at ${x}px ${y}px);
+  `;
+  document.body.appendChild(ripple);
+
+  // Animate circle expand
+  ripple.animate(
+    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${maxR}px at ${x}px ${y}px)`] },
+    { duration: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+  ).finished.then(() => {
+    // Switch theme when ripple fully covers screen
+    html.setAttribute('data-theme', nextTheme);
+    if (btn) btn.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    localStorage.setItem('av_theme', nextTheme);
+    // Fade out ripple to reveal new theme
+    ripple.animate([{ opacity:1 },{ opacity:0 }], { duration: 150, fill: 'forwards' })
+      .finished.then(() => ripple.remove());
   });
 }
 function loadTheme() {

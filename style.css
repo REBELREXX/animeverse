@@ -1540,3 +1540,12 @@ Current phase:
 /* ===== HIDE WISHLIST HEART + GENRE TAGS ON CARDS ===== */
 .card .wishlist-btn { display: none !important; }
 .card .genre-tag    { display: none !important; }
+
+/* ===== THEME SWITCH — CIRCULAR RIPPLE (View Transitions API) ===== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 9999; }

@@ -180,27 +180,6 @@
       }
     }
 
-    function copyAnimeLink(id) {
-      // Telegram Mini App Link Format: https://t.me/VerseFileShareBot/VERSE?startapp=[id]
-      // Using 'startapp' which Telegram automatically converts to 'tgWebAppStartParam'
-      const url = `https://t.me/VerseFileShareBot/VERSE?startapp=${id}`;
-      navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById('shareBtn');
-        const oldHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Link Copied!';
-        btn.style.borderColor = '#27ae60';
-        btn.style.color = '#27ae60';
-        setTimeout(() => {
-          btn.innerHTML = oldHTML;
-          btn.style.borderColor = '';
-          btn.style.color = '';
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy link:', err);
-        alert('Failed to copy link. Please copy it manually from the address bar.');
-      });
-    }
-
     async function toggleWatchlist(id) {
       const user = auth.currentUser;
       const btn  = document.getElementById('watchlistBtn');
@@ -568,12 +547,7 @@
               <i class="fas fa-heart"></i>
               ${isSaved ? 'Saved!' : 'Add to List'}
             </button>
-            <button class="btn-outline"
-              id="shareBtn"
-              onclick="copyAnimeLink('${animeId}')">
-              <i class="fas fa-share-nodes"></i>
-              Share
-            </button>
+
           </div>
         </div>
 

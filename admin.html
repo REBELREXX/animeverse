@@ -1591,7 +1591,22 @@
     }
 
     // ===== MANAGE LIST =====
-     async function renderManageList(filter) {
+     function copyAdminShareLink(id, btn) {
+      const url = `https://t.me/VerseFileShareBot/VERSE?startapp=${id}`;
+      navigator.clipboard.writeText(url).then(() => {
+        const oldHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.style.background = '#27ae60';
+        setTimeout(() => {
+          btn.innerHTML = oldHTML;
+          btn.style.background = '';
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy link: ' + err);
+      });
+    }
+
+    async function renderManageList(filter) {
       let list = allAnimeCache;
       if (!list.length) {
         list = await getAllAnime();
@@ -1637,6 +1652,11 @@
                 cursor:pointer;font-size:13px"
               onclick="openEditAnime('${anime.firestoreId}')">
               <i class="fas fa-pen"></i>
+            </button>
+            <button class="btn-sm"
+              style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:700"
+              onclick="copyAdminShareLink('${anime.firestoreId}', this)">
+              <i class="fas fa-link"></i> Link
             </button>
             <button class="btn-sm delete"
               onclick="deleteAnime('${anime.firestoreId}',

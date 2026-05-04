@@ -459,6 +459,24 @@
           const wl  = doc.exists ? (doc.data().watchlist || []) : [];
           isSaved   = wl.includes(animeId);
         } catch(e) {}
+
+        // ── TRACK ANIME VIEW ──
+        try {
+          await db.collection('userActivity').doc(user.uid).set({
+            uid:         user.uid,
+            displayName: user.displayName || 'Unknown',
+            email:       user.email || '',
+            photoURL:    user.photoURL || '',
+            lastViewed: {
+              animeId:    animeId,
+              animeTitle: anime.title || '',
+              thumb:      anime.thumb || anime.cover || '',
+              timestamp:  firebase.firestore.FieldValue.serverTimestamp()
+            },
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        } catch(e) {}
+
       } else {
         const local = JSON.parse(localStorage.getItem('av_mylist') || '[]');
         isSaved = local.includes(animeId);

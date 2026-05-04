@@ -1194,3 +1194,20 @@ window.avDoSignup                 = avDoSignup;
 window.avForgotPw                 = avForgotPw;
 window.avTogglePw                 = avTogglePw;
 window.avResend                   = avResend;
+
+// ===== VISIT TRACKER =====
+(function trackVisit() {
+  try {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const key   = 'av_visited_' + today;
+    if (sessionStorage.getItem(key)) return; // already counted this session
+    sessionStorage.setItem(key, '1');
+
+    const ref = db.collection('siteStats').doc(today);
+    ref.set({
+      date:  today,
+      count: firebase.firestore.FieldValue.increment(1),
+      lastHit: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+  } catch(e) {}
+})();

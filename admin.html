@@ -26,6 +26,7 @@
       border-radius: 10px; z-index: 500; box-shadow: 0 8px 24px var(--shadow);
       overflow: hidden; animation: ssFade 0.2s ease;
     }
+    @keyframes statPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.6)} }
     @keyframes ssFade { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
     .ss-dropdown.hidden { display: none; }
@@ -300,6 +301,15 @@
         <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">
           <i class="fas fa-moon"></i>
         </button>
+        <a href="stats.html" class="icon-btn"
+          style="display:flex;align-items:center;justify-content:center;
+            width:38px;height:38px;position:relative"
+          title="View Stats">
+          <i class="fas fa-chart-line"></i>
+          <span style="position:absolute;top:4px;right:4px;width:7px;height:7px;
+            background:#00E5A0;border-radius:50%;
+            animation:statPulse 1.5s infinite"></span>
+        </a>
         <a href="index.html" class="icon-btn"
           style="display:flex;align-items:center;
             justify-content:center;width:38px;height:38px">

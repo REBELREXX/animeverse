@@ -288,7 +288,6 @@
             ${btnHTML}
             <div class="reactions-zone" data-packid="${animeId}_${idx}">
               <div class="reactions-display" id="rxd_${animeId}_${idx}"></div>
-              <div class="reactions-hold-hint">Hold to react</div>
             </div>
           </div>`;
       }).join('');
@@ -759,8 +758,8 @@
   <!-- ===== EMOJI REACTIONS ===== -->
   <div id="emojiPickerOverlay" onclick="closeEmojiPicker()"></div>
   <div id="emojiPickerPopup">
-    <div id="emojiQuickRow"></div>
-    <div style="display:flex;justify-content:flex-end;padding:0 2px">
+    <div style="display:flex;align-items:center;gap:4px">
+      <div id="emojiQuickRow"></div>
       <button id="emojiMoreBtn" onclick="toggleEmojiGrid()"><i class="fas fa-chevron-down"></i></button>
     </div>
     <div id="emojiGridWrap">
@@ -942,13 +941,9 @@
         });
 
         display.innerHTML = '';
-        const hint = display.closest('.reactions-zone')?.querySelector('.reactions-hold-hint');
-
         if (Object.keys(counts).length === 0) {
-          if (hint) hint.style.display = 'block';
           return;
         }
-        if (hint) hint.style.display = 'none';
 
         // sort by count desc
         Object.entries(counts)

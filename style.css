@@ -1580,34 +1580,43 @@ Current phase:
    EMOJI REACTIONS SYSTEM
    ============================================ */
 
-/* ── REACTIONS ZONE (inside tg-pack) ── */
+/* ── REACTIONS ZONE ── */
 .reactions-zone {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(44,165,224,0.2);
   cursor: pointer;
-  user-select: none;
   -webkit-user-select: none;
-  position: relative;
-}
-.reactions-zone:empty,
-.reactions-zone .reactions-display:empty {
-  display: none;
-}
-/* hide the zone border when no reactions */
-.reactions-zone:has(.reactions-display:empty) {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
-/* ── REACTION PILLS ── */
 .reactions-display {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  min-height: 0;
 }
+
+/* hold hint — shown when no reactions yet */
+.rx-hold-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(44,165,224,0.45);
+  letter-spacing: 0.3px;
+  font-family: 'Poppins', sans-serif;
+  animation: hintPulse 2.5s ease-in-out infinite;
+}
+@keyframes hintPulse {
+  0%,100% { opacity: 0.45; }
+  50%      { opacity: 0.9; }
+}
+
+/* ── REACTION PILLS ── */
 
 .rx-pill {
   display: inline-flex;

@@ -760,7 +760,9 @@
   <div id="emojiPickerOverlay" onclick="closeEmojiPicker()"></div>
   <div id="emojiPickerPopup">
     <div id="emojiQuickRow"></div>
-    <button id="emojiMoreBtn" onclick="toggleEmojiGrid()"><i class="fas fa-chevron-down"></i></button>
+    <div style="display:flex;justify-content:flex-end;padding:0 2px">
+      <button id="emojiMoreBtn" onclick="toggleEmojiGrid()"><i class="fas fa-chevron-down"></i></button>
+    </div>
     <div id="emojiGridWrap">
       <div id="emojiGrid"></div>
     </div>
@@ -770,11 +772,10 @@
   (function() {
     const QUICK = ['❤️','👍','🔥','🥰','👏','😄','🤩'];
     const ALL   = [
-      '❤️','👍','🔥','🥰','👏','😄','🤩','🤙',
-      '🕊️','😍','🦈','💔','🌑','💯','⚡','🏆',
-      '🍓','🍾','💋','😭','🤓','👻','👨‍💻','👀',
-      '🎃','🙈','😇','🤝','✍️','🤗','🫡','🗿',
-      '🆒','💘','🙉','🦄','😘','💊','🙊','😎'
+      '🤙','🕊️','😍','🦈','💔','🌑','💯','⚡',
+      '🏆','🍓','🍾','💋','😭','🤓','👻','👨‍💻',
+      '👀','🎃','🙈','😇','🤝','✍️','🤗','🫡',
+      '🗿','🆒','💘','🙉','🦄','😘','💊','🙊','😎'
     ];
 
     let _packId   = null;
@@ -846,6 +847,7 @@
       popup.style.top     = Math.max(60, top) + 'px';
       popup.style.display = 'flex';
       overlay.style.display = 'block';
+      document.body.style.overflow = 'hidden';
 
       // animate emoji in
       popup.querySelectorAll('.eq-btn').forEach((b,i) => {
@@ -860,8 +862,9 @@
     }
 
     window.closeEmojiPicker = function() {
-      popup.style.display  = 'none';
+      popup.style.display   = 'none';
       overlay.style.display = 'none';
+      document.body.style.overflow = '';
       _packId = null;
     };
 
@@ -874,7 +877,13 @@
     // ── PICK EMOJI ──
     function pickEmoji(emoji) {
       if (!_packId) return;
-      const uid = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.uid : 'guest_' + Math.random().toString(36).slice(2,8);
+      let uid;
+      if (typeof auth !== 'undefined' && auth.currentUser) {
+        uid = auth.currentUser.uid;
+      } else {
+        uid = localStorage.getItem('av_guest_uid');
+        if (!uid) { uid = 'g_' + Math.random().toString(36).slice(2,10); localStorage.setItem('av_guest_uid', uid); }
+      }
       const ref = db.collection('reactions').doc(_packId);
 
       ref.get().then(doc => {

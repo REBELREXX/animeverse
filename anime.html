@@ -288,6 +288,7 @@
             ${btnHTML}
             <div class="reactions-zone" data-packid="${animeId}_${idx}">
               <div class="reactions-display" id="rxd_${animeId}_${idx}"></div>
+              <div class="rx-hold-hint"><i class="fas fa-hand-point-up"></i> Hold to react</div>
             </div>
           </div>`;
       }).join('');
@@ -804,22 +805,41 @@
       gridEl.appendChild(btn);
     });
 
-    // ── ATTACH HOLD LISTENERS after DOM builds packs ──
+    // ── ATTACH HOLD LISTENERS ──
     function attachReactionZones() {
       document.querySelectorAll('.reactions-zone').forEach(zone => {
         if (zone._rxAttached) return;
         zone._rxAttached = true;
 
         const packId = zone.dataset.packid;
-        loadReactions(packId, zone.querySelector('.reactions-display'));
+        const disp   = zone.querySelector('.reactions-display');
+        loadReactions(packId, disp);
 
-        // long-press
-        zone.addEventListener('pointerdown', e => {
-          _holdTimer = setTimeout(() => { openPicker(packId, zone, e); }, 450);
-        });
-        zone.addEventListener('pointerup',    () => clearTimeout(_holdTimer));
-        zone.addEventListener('pointerleave', () => clearTimeout(_holdTimer));
-        zone.addEventListener('contextmenu',  e => { e.preventDefault(); openPicker(packId, zone, e); });
+        let holdTimer = null;
+        let didOpen   = false;
+
+        function startHold(e) {
+          didOpen = false;
+          holdTimer = setTimeout(() => {
+            didOpen = true;
+            navigator.vibrate && navigator.vibrate(30);
+            openPicker(packId, zone, e);
+          }, 400);
+        }
+        function cancelHold() { clearTimeout(holdTimer); }
+
+        // touch (mobile)
+        zone.addEventListener('touchstart', startHold, { passive: true });
+        zone.addEventListener('touchend',   cancelHold);
+        zone.addEventListener('touchmove',  cancelHold);
+
+        // mouse (desktop)
+        zone.addEventListener('mousedown', startHold);
+        zone.addEventListener('mouseup',   cancelHold);
+        zone.addEventListener('mouseleave',cancelHold);
+
+        // prevent context menu on long press
+        zone.addEventListener('contextmenu', e => { e.preventDefault(); });
       });
     }
 
@@ -941,9 +961,12 @@
         });
 
         display.innerHTML = '';
+        const hint = display.closest('.reactions-zone')?.querySelector('.rx-hold-hint');
         if (Object.keys(counts).length === 0) {
+          if (hint) hint.style.display = 'flex';
           return;
         }
+        if (hint) hint.style.display = 'none';
 
         // sort by count desc
         Object.entries(counts)

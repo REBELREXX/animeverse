@@ -275,7 +275,7 @@
         }
         if (!btnHTML) return '';
         return `
-          <div class="season-tg-pack" style="margin-top:10px" data-packid="${animeId}_${idx}">
+          <div class="season-tg-pack" style="margin-top:10px" data-packid="${animeId}_${season.id || 's0'}_${idx}">
             <div class="season-tg-pack-header">
               <div class="season-tg-pack-icon"><i class="fab fa-telegram"></i></div>
               <div>
@@ -286,8 +286,8 @@
               </div>
             </div>
             ${btnHTML}
-            <div class="reactions-zone" data-packid="${animeId}_${idx}">
-              <div class="reactions-display" id="rxd_${animeId}_${idx}"></div>
+            <div class="reactions-zone" data-packid="${animeId}_${season.id || 's0'}_${idx}">
+              <div class="reactions-display" id="rxd_${animeId}_${season.id || 's0'}_${idx}"></div>
               <div class="rx-hold-hint"><i class="fas fa-hand-point-up"></i> Hold to react</div>
             </div>
           </div>`;

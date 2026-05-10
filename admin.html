@@ -383,6 +383,9 @@
         <button class="admin-tab" onclick="switchTab('guide',this)">
           <i class="fas fa-book"></i> Guide
         </button>
+        <button class="admin-tab" onclick="switchTab('reactions',this)">
+          <i class="fas fa-face-smile"></i> Reactions
+        </button>
       </div>
 
       <!-- ===== TAB: ADD ANIME ===== -->
@@ -2979,5 +2982,203 @@
       });
     });
   </script>
+
+  <!-- ===== REACTIONS TAB JS ===== -->
+  <script>
+  const RX_EMOJIS = ['❤️','🔥','👍','🤩','🥰','😄','👏','💯','⚡','🦈','💔','😭','🤓','👻','🏆','😍'];
+  let _rxAllAnime = [];
+
+  function getSeasonPacksAdmin(season) {
+    const packs = [];
+    if (season.telegramPacks && season.telegramPacks.length > 0) {
+      season.telegramPacks.forEach(p => {
+        if (p && (p.single || (p.links && Object.values(p.links).some(v => v)))) packs.push(p);
+      });
+      return packs;
+    }
+    if (season.telegramLinks && Object.values(season.telegramLinks).some(v => v && v.trim())) {
+      packs.push({ links: season.telegramLinks }); return packs;
+    }
+    if (season.telegramUrl && season.telegramUrl.trim()) {
+      packs.push({ single: season.telegramUrl }); return packs;
+    }
+    return packs;
+  }
+
+  async function loadRxAnime() {
+    const list = document.getElementById('rxAnimeList');
+    list.innerHTML = '<div style="color:var(--text2);font-size:13px;font-weight:600;padding:10px 0">Loading...</div>';
+    try {
+      const snap = await db.collection('anime').orderBy('title').get({ source: 'server' });
+      _rxAllAnime = snap.docs.map(d => ({ ...d.data(), firestoreId: d.id }));
+      renderRxAnime(_rxAllAnime);
+    } catch(e) {
+      list.innerHTML = '<div style="color:#FB7185;font-size:12px">Error: ' + e.message + '</div>';
+    }
+  }
+
+  function filterRxAnime() {
+    const q = document.getElementById('rxSearchInput').value.toLowerCase();
+    renderRxAnime(_rxAllAnime.filter(a => (a.title||'').toLowerCase().includes(q)));
+  }
+
+  function renderRxAnime(animeList) {
+    const list = document.getElementById('rxAnimeList');
+    list.innerHTML = '';
+    let rendered = 0;
+    animeList.forEach(anime => {
+      const seasons = anime.seasons || [];
+      const hasPacks = seasons.some(s => getSeasonPacksAdmin(s).length > 0);
+      if (!hasPacks) return;
+      rendered++;
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0';
+      header.innerHTML = `
+        <div style="font-size:13px;font-weight:800;flex:1">${esc(anime.title||'Untitled')}</div>
+        <span style="font-size:11px;color:var(--text2);font-weight:600">${seasons.length} season(s)</span>
+        <i class="fas fa-chevron-down" style="color:var(--text2);font-size:12px;transition:transform .2s"></i>
+      `;
+
+      const body = document.createElement('div');
+      body.style.cssText = 'display:none;margin-top:10px';
+
+      header.onclick = () => {
+        const open = body.style.display === 'block';
+        body.style.display = open ? 'none' : 'block';
+        header.querySelector('i').style.transform = open ? '' : 'rotate(180deg)';
+        if (!open && !body._loaded) { body._loaded = true; loadPacksForAnime(anime, body); }
+      };
+
+      card.appendChild(header);
+      card.appendChild(body);
+      list.appendChild(card);
+    });
+    if (rendered === 0) list.innerHTML = '<div style="color:var(--text2);font-size:13px;font-weight:600;text-align:center;padding:20px">Koi anime nahi mila telegram packs ke saath</div>';
+  }
+
+  async function loadPacksForAnime(anime, container) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:12px">Reactions load ho rahe hain...</div>';
+    const animeId = anime.firestoreId;
+    const seasons  = anime.seasons || [];
+    container.innerHTML = '';
+
+    for (const season of seasons) {
+      const packs = getSeasonPacksAdmin(season);
+      if (!packs.length) continue;
+
+      for (let idx = 0; idx < packs.length; idx++) {
+        const packId = `${animeId}_${season.id || 's0'}_${idx}`;
+        const packLabel = packs.length > 1 ? `Season ${season.id} — Pack ${idx+1}` : `Season ${season.id}`;
+
+        const packDiv = document.createElement('div');
+        packDiv.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card-bg)';
+        packDiv.id = 'rxpack_' + packId.replace(/[^a-zA-Z0-9]/g,'_');
+
+        let rxDoc;
+        try { rxDoc = await db.collection('reactions').doc(packId).get(); } catch(e) {}
+        const rxData = (rxDoc && rxDoc.exists) ? rxDoc.data() : {};
+        const userPicks = rxData.userPicks || {};
+
+        packDiv.innerHTML = renderPackEditor(packId, packLabel, rxData);
+        container.appendChild(packDiv);
+      }
+    }
+    if (!container.children.length) {
+      container.innerHTML = '<div style="color:var(--text2);font-size:12px">Koi telegram pack nahi mila</div>';
+    }
+  }
+
+  function renderPackEditor(packId, label, rxData) {
+    const counts = Object.entries(rxData)
+      .filter(([k,v]) => k !== 'userPicks' && typeof v === 'number')
+      .sort((a,b) => b[1]-a[1]);
+
+    const rows = counts.map(([emoji, count]) => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px" id="rxrow_${safeId(packId)}_${encodeURIComponent(emoji)}">
+        <span style="font-size:20px">${emoji}</span>
+        <input type="number" value="${count}" min="0"
+          style="width:80px;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'Poppins',sans-serif;font-weight:700;font-size:13px"
+          onchange="updateRxCount('${packId}','${emoji}',this.value)"/>
+        <button onclick="deleteRxEmoji('${packId}','${emoji}')"
+          style="background:#FB7185;border:none;border-radius:8px;padding:5px 10px;color:#fff;font-size:11px;font-weight:800;cursor:pointer">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>`).join('');
+
+    const emojiOptions = RX_EMOJIS.map(e =>
+      `<option value="${e}">${e}</option>`
+    ).join('');
+
+    return `
+      <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${esc(label)}</div>
+      <div id="rxrows_${safeId(packId)}">${rows || '<div style="color:var(--text2);font-size:12px;margin-bottom:8px">Koi reaction nahi abhi</div>'}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <select id="rxAddEmoji_${safeId(packId)}"
+          style="background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'Poppins',sans-serif;font-weight:700;font-size:14px">
+          ${emojiOptions}
+        </select>
+        <input type="number" id="rxAddCount_${safeId(packId)}" placeholder="Count" value="1000" min="1"
+          style="width:90px;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'Poppins',sans-serif;font-weight:700;font-size:13px"/>
+        <button onclick="addRxEmoji('${packId}')"
+          style="background:var(--accent);border:none;border-radius:8px;padding:6px 14px;color:#fff;font-family:'Poppins',sans-serif;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,0.3)">
+          <i class="fas fa-plus"></i> Add
+        </button>
+      </div>`;
+  }
+
+  async function updateRxCount(packId, emoji, val) {
+    const count = parseInt(val);
+    if (isNaN(count) || count < 0) return;
+    try {
+      const update = {};
+      update[emoji] = count;
+      await db.collection('reactions').doc(packId).set(update, { merge: true });
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  async function deleteRxEmoji(packId, emoji) {
+    if (!confirm(`"${emoji}" reaction delete karein?`)) return;
+    try {
+      const update = {};
+      update[emoji] = firebase.firestore.FieldValue.delete();
+      await db.collection('reactions').doc(packId).update(update);
+      // reload pack
+      const el = document.getElementById('rxpack_' + packId.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (el) {
+        const rxDoc = await db.collection('reactions').doc(packId).get();
+        const rxData = rxDoc.exists ? rxDoc.data() : {};
+        const label = el.querySelector('div').textContent;
+        el.innerHTML = renderPackEditor(packId, label, rxData);
+      }
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  async function addRxEmoji(packId) {
+    const sid    = safeId(packId);
+    const emoji  = document.getElementById('rxAddEmoji_' + sid).value;
+    const count  = parseInt(document.getElementById('rxAddCount_' + sid).value);
+    if (!emoji || isNaN(count) || count < 1) return;
+    try {
+      const update = {};
+      update[emoji] = count;
+      await db.collection('reactions').doc(packId).set(update, { merge: true });
+      const el = document.getElementById('rxpack_' + packId.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (el) {
+        const rxDoc = await db.collection('reactions').doc(packId).get();
+        const rxData = rxDoc.exists ? rxDoc.data() : {};
+        const label = el.querySelector('div').textContent;
+        el.innerHTML = renderPackEditor(packId, label, rxData);
+      }
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  function safeId(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+
 </body>
 </html>

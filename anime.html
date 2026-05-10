@@ -554,7 +554,7 @@
           <p class="anime-desc">${anime.description || ''}</p>
           <div style="display:flex;align-items:center;justify-content:flex-end;margin:8px 0 10px">
             <span class="view-badge" id="viewBadge" style="font-size:11px">
-              <i class="fas fa-eye"></i>&nbsp;<span id="viewCount">${anime.views || 0}</span> views
+              <i class="fas fa-eye"></i>&nbsp;<span id="viewCount">${fmtViews(anime.views || 0)}</span> views
             </span>
           </div>
           <div class="action-btns">
@@ -706,6 +706,13 @@
     }
 
     // ===== VIEW COUNTER =====
+    function fmtViews(n) {
+      if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+      return n;
+    }
+
+
     function getViewerId() {
       // Logged-in user → their UID. Guest → stable device ID from localStorage
       const user = auth.currentUser;
@@ -720,29 +727,27 @@
 
     async function recordView(animeId) {
       try {
-        const viewerId = getViewerId();
-        const ref = db.collection('anime').doc(animeId);
+        // Session-based throttle — one increment per session per anime
+        const sessKey = 'av_viewed_' + animeId;
+        if (sessionStorage.getItem(sessKey)) return;
+        sessionStorage.setItem(sessKey, '1');
 
-        // Use Firestore transaction to safely increment
+        const inc = Math.floor(Math.random() * 151) + 100; // 100-250
+        const ref  = db.collection('anime').doc(animeId);
+
         await db.runTransaction(async tx => {
           const doc = await tx.get(ref);
           if (!doc.exists) return;
           const data = doc.data();
-          const viewedBy = data.viewedBy || [];
 
-          // Already viewed by this viewer — do nothing
-          if (viewedBy.includes(viewerId)) return;
+          tx.update(ref, { views: (data.views || 0) + inc });
 
-          tx.update(ref, {
-            views:    (data.views || 0) + 1,
-            viewedBy: [...viewedBy, viewerId]
-          });
-
-          // Animate the badge after transaction
+          // Animate badge
           const badge = document.getElementById('viewBadge');
           const count = document.getElementById('viewCount');
           if (count) {
-            count.textContent = (data.views || 0) + 1;
+            const newVal = (data.views || 0) + inc;
+            count.textContent = fmtViews(newVal);
             if (badge) {
               badge.classList.add('counting');
               setTimeout(() => badge.classList.remove('counting'), 500);
@@ -770,12 +775,6 @@
 
   <script>
   (function() {
-    function fmtCount(n) {
-      if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-      if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
-      return n;
-    }
-
     const QUICK = ['❤️','👍','🔥','🥰','👏','😄','🤩'];
     const ALL   = [
       '🤙','🕊️','😍','🦈','💔','🌑','💯','⚡',
@@ -981,7 +980,7 @@
             const pill = document.createElement('div');
             pill.className = 'rx-pill' + (emoji === myEmoji ? ' rx-mine' : '');
             pill.dataset.emoji = emoji;
-            pill.innerHTML = `<span class="rx-em">${emoji}</span><span class="rx-ct">${fmtCount(count)}</span>`;
+            pill.innerHTML = `<span class="rx-em">${emoji}</span><span class="rx-ct">${count}</span>`;
             pill.style.animationDelay = (i * 0.05) + 's';
             pill.onclick = () => { _packId = packId; _display = display; pickEmoji(emoji); };
             display.appendChild(pill);

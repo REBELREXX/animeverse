@@ -98,7 +98,7 @@
 
       let animeSnap;
       try {
-        animeSnap = await db.collection('anime').get({ source: 'server' });
+        animeSnap = await db.collection('anime').get();
       } catch(e) {
         addLog('❌ Firestore error: ' + e.message, 'err'); btn.disabled=false; return;
       }
@@ -169,7 +169,7 @@
 
       let animeSnap;
       try {
-        animeSnap = await db.collection('anime').get({ source: 'server' });
+        animeSnap = await db.collection('anime').get();
       } catch(e) {
         addLog('❌ Error: ' + e.message, 'err'); btn.disabled=false; return;
       }

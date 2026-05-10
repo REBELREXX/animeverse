@@ -42,10 +42,15 @@
   <h1>🌱 Seed Reactions</h1>
   <p>Ek baar chalao — ye sare anime ke har telegram pack mein random reactions daal dega.</p>
   <div class="log-box" id="logBox"><span class="skip">Seed karne ke liye button dabao...</span></div>
-  <button class="run-btn" id="runBtn" onclick="seedAll()">
-    <i class="fas fa-bolt"></i> Seed All Reactions
-  </button>
-  <div class="done-banner" id="doneBanner">✅ Sab reactions seed ho gaye! Ab ye page close karo.</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="run-btn" id="runBtn" onclick="seedAll()">
+      <i class="fas fa-bolt"></i> Seed All Reactions
+    </button>
+    <button class="run-btn" id="viewBtn" onclick="seedViews()" style="background:#FB7185">
+      <i class="fas fa-eye"></i> Seed All Views
+    </button>
+  </div>
+  <div class="done-banner" id="doneBanner">✅ Done! Ab ye page close karo.</div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -113,7 +118,7 @@
         for (const season of seasons) {
           const packs = getSeasonPacks(season);
           for (let idx = 0; idx < packs.length; idx++) {
-            const packId = `${animeId}_${season.id || 's0'}_${idx}`;
+            const packId = `${animeId}_${season.id !== undefined ? season.id : 's0'}_${idx}`;
             const ref = db.collection('reactions').doc(packId);
 
             // Check if already seeded
@@ -154,6 +159,45 @@
       addLog(``, 'ok');
       addLog(`🎉 Done! ${total} packs mein reactions seed ho gaye.`, 'ok');
       document.getElementById('doneBanner').style.display = 'block';
+    }
+
+    async function seedViews() {
+      const btn = document.getElementById('viewBtn');
+      btn.disabled = true;
+      log.innerHTML = '';
+      addLog('🔍 Anime fetch ho rahe hain...', 'skip');
+
+      let animeSnap;
+      try {
+        animeSnap = await db.collection('anime').get({ source: 'server' });
+      } catch(e) {
+        addLog('❌ Error: ' + e.message, 'err'); btn.disabled=false; return;
+      }
+
+      addLog(`✅ ${animeSnap.size} anime mile. Views seed ho rahe hain...`, 'ok');
+
+      let batch = db.batch();
+      let ops = 0; let total = 0;
+
+      for (const doc of animeSnap.docs) {
+        const data = doc.data();
+        // Skip if already has decent views
+        if ((data.views || 0) > 5000) {
+          addLog(`⏭ Skip: ${data.title || doc.id} (already ${data.views} views)`, 'skip');
+          continue;
+        }
+        const fakeViews = Math.floor(Math.random() * 6001) + 10000; // 10k-16k
+        batch.update(doc.ref, { views: fakeViews });
+        ops++; total++;
+        addLog(`✅ ${data.title || doc.id} → ${(fakeViews/1000).toFixed(1)}k views`, 'ok');
+
+        if (ops >= 400) { await batch.commit(); batch = db.batch(); ops = 0; }
+      }
+
+      if (ops > 0) await batch.commit();
+      addLog(`🎉 Done! ${total} anime mein views seed ho gaye.`, 'ok');
+      document.getElementById('doneBanner').style.display = 'block';
+      btn.disabled = false;
     }
   </script>
 </body>

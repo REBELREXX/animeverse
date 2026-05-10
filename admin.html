@@ -3081,16 +3081,33 @@
   async function loadPacksForAnime(anime, container) {
     container.innerHTML = '<div style="color:var(--text2);font-size:12px">Reactions load ho rahe hain...</div>';
     const animeId = anime.firestoreId;
-    const seasons  = anime.seasons || [];
+    const allSeasons = anime.seasons || [];
     container.innerHTML = '';
 
-    for (const season of seasons) {
+    // Build parent map for label generation
+    const parentMap = {};
+    allSeasons.forEach(s => { if (s.parentId == null) parentMap[s.id] = s.title || ('Season ' + s.id); });
+
+    // Iterate ALL seasons (both parent standalone and sub-seasons)
+    for (const season of allSeasons) {
       const packs = getSeasonPacksAdmin(season);
       if (!packs.length) continue;
 
+      // Build human-readable label
+      let label = '';
+      if (season.parentId != null) {
+        // Sub-season: show "ParentName > SubName"
+        const parentName = parentMap[String(season.parentId)] || ('Season ' + season.parentId);
+        const subName = season.title || season.name || ('Sub ' + season.id);
+        label = `${parentName} › ${subName}`;
+      } else {
+        // Standalone or parent season
+        label = season.title || season.name || ('Season ' + season.id);
+      }
+
       for (let idx = 0; idx < packs.length; idx++) {
         const packId = `${animeId}_${season.id || 's0'}_${idx}`;
-        const packLabel = packs.length > 1 ? `Season ${season.id} — Pack ${idx+1}` : `Season ${season.id}`;
+        const packLabel = packs.length > 1 ? `${label} — Pack ${idx+1}` : label;
 
         const packDiv = document.createElement('div');
         packDiv.style.cssText = 'border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card-bg)';
@@ -3099,7 +3116,6 @@
         let rxDoc;
         try { rxDoc = await db.collection('reactions').doc(packId).get(); } catch(e) {}
         const rxData = (rxDoc && rxDoc.exists) ? rxDoc.data() : {};
-        const userPicks = rxData.userPicks || {};
 
         packDiv.innerHTML = renderPackEditor(packId, packLabel, rxData);
         container.appendChild(packDiv);

@@ -770,6 +770,12 @@
 
   <script>
   (function() {
+    function fmtCount(n) {
+      if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+      if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+      return n;
+    }
+
     const QUICK = ['❤️','👍','🔥','🥰','👏','😄','🤩'];
     const ALL   = [
       '🤙','🕊️','😍','🦈','💔','🌑','💯','⚡',
@@ -975,7 +981,7 @@
             const pill = document.createElement('div');
             pill.className = 'rx-pill' + (emoji === myEmoji ? ' rx-mine' : '');
             pill.dataset.emoji = emoji;
-            pill.innerHTML = `<span class="rx-em">${emoji}</span><span class="rx-ct">${count}</span>`;
+            pill.innerHTML = `<span class="rx-em">${emoji}</span><span class="rx-ct">${fmtCount(count)}</span>`;
             pill.style.animationDelay = (i * 0.05) + 's';
             pill.onclick = () => { _packId = packId; _display = display; pickEmoji(emoji); };
             display.appendChild(pill);

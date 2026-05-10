@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Seed Reactions — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body { font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text); padding:20px; }
+    h1 { font-size:20px; font-weight:900; margin-bottom:4px; }
+    p  { font-size:12px; color:var(--text2); margin-bottom:20px; }
+    .log-box {
+      background:var(--card-bg); border:1.5px solid var(--border);
+      border-radius:14px; padding:16px; font-size:12px;
+      font-family:monospace; max-height:60vh; overflow-y:auto;
+      margin-bottom:16px; line-height:1.8;
+    }
+    .log-box .ok   { color:#00E5A0; }
+    .log-box .skip { color:var(--text2); }
+    .log-box .err  { color:#FB7185; }
+    .run-btn {
+      background:var(--accent); color:#fff;
+      border:none; border-radius:12px;
+      padding:12px 28px; font-family:'Poppins',sans-serif;
+      font-weight:800; font-size:14px; cursor:pointer;
+      box-shadow:0 5px 0 rgba(0,0,0,0.35);
+      transition:transform .1s, box-shadow .1s;
+    }
+    .run-btn:active { transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,0.35); }
+    .run-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .done-banner {
+      display:none; background:rgba(0,229,160,.15);
+      border:1.5px solid #00E5A0; border-radius:12px;
+      padding:12px 16px; font-weight:800; font-size:13px;
+      color:#00E5A0; margin-top:14px; text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌱 Seed Reactions</h1>
+  <p>Ek baar chalao — ye sare anime ke har telegram pack mein random reactions daal dega.</p>
+  <div class="log-box" id="logBox"><span class="skip">Seed karne ke liye button dabao...</span></div>
+  <button class="run-btn" id="runBtn" onclick="seedAll()">
+    <i class="fas fa-bolt"></i> Seed All Reactions
+  </button>
+  <div class="done-banner" id="doneBanner">✅ Sab reactions seed ho gaye! Ab ye page close karo.</div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    const EMOJIS = ['❤️','🔥','👍','🤩','🥰','😄','👏','💯','⚡'];
+    const log = document.getElementById('logBox');
+
+    function addLog(msg, type='ok') {
+      const div = document.createElement('div');
+      div.className = type;
+      div.innerHTML = msg;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function randBetween(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getSeasonPacks(season) {
+      const packs = [];
+      if (season.telegramPacks && season.telegramPacks.length > 0) {
+        season.telegramPacks.forEach(p => {
+          if (p && (p.single || (p.links && Object.values(p.links).some(v => v))))
+            packs.push(p);
+        });
+        return packs;
+      }
+      if (season.telegramLinks && Object.values(season.telegramLinks).some(v => v && v.trim())) {
+        packs.push({ links: season.telegramLinks }); return packs;
+      }
+      if (season.telegramUrl && season.telegramUrl.trim()) {
+        packs.push({ single: season.telegramUrl }); return packs;
+      }
+      return packs;
+    }
+
+    async function seedAll() {
+      const btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      log.innerHTML = '';
+      addLog('🔍 Anime fetch ho rahe hain...', 'skip');
+
+      let animeSnap;
+      try {
+        animeSnap = await db.collection('anime').get({ source: 'server' });
+      } catch(e) {
+        addLog('❌ Firestore error: ' + e.message, 'err'); btn.disabled=false; return;
+      }
+
+      addLog(`✅ ${animeSnap.size} anime mile. Ab reactions daal raha hoon...`, 'ok');
+
+      const batch_size = 400;
+      let batch = db.batch();
+      let ops = 0;
+      let total = 0;
+
+      for (const doc of animeSnap.docs) {
+        const anime  = doc.data();
+        const animeId = doc.id;
+        const seasons = anime.seasons || [];
+
+        for (const season of seasons) {
+          const packs = getSeasonPacks(season);
+          for (let idx = 0; idx < packs.length; idx++) {
+            const packId = `${animeId}_${season.id || 's0'}_${idx}`;
+            const ref = db.collection('reactions').doc(packId);
+
+            // Check if already seeded
+            const existing = await ref.get();
+            if (existing.exists && Object.keys(existing.data()).filter(k => k !== 'userPicks').length >= 5) {
+              addLog(`⏭ Skip: ${anime.title || animeId} → Season ${season.id} Pack ${idx}`, 'skip');
+              continue;
+            }
+
+            // Generate random reactions — pick 8-9 emojis with 2k-3k counts
+            const shuffled = [...EMOJIS].sort(() => Math.random() - 0.5);
+            const count = randBetween(8, 9);
+            const chosen = shuffled.slice(0, count);
+
+            const data = { userPicks: {} };
+            chosen.forEach(e => {
+              // lead emoji gets more, rest get 2k-3k range
+              data[e] = e === chosen[0] ? randBetween(2800, 5500) : randBetween(1200, 3200);
+            });
+
+            batch.set(ref, data, { merge: true });
+            ops++;
+            total++;
+
+            addLog(`✅ ${anime.title || animeId} → S${season.id} P${idx}: ${chosen.join(' ')}`, 'ok');
+
+            if (ops >= batch_size) {
+              await batch.commit();
+              batch = db.batch();
+              ops = 0;
+            }
+          }
+        }
+      }
+
+      if (ops > 0) await batch.commit();
+
+      addLog(``, 'ok');
+      addLog(`🎉 Done! ${total} packs mein reactions seed ho gaye.`, 'ok');
+      document.getElementById('doneBanner').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

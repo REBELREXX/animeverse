@@ -427,6 +427,7 @@ a { text-decoration: none; color: inherit; }
 }
 .card-badge, .card-badge-overlay {
   display: inline-block !important;
+  align-self: flex-start !important;
   visibility: visible !important;
   opacity: 1 !important;
   background: var(--accent) !important;
@@ -439,6 +440,7 @@ a { text-decoration: none; color: inherit; }
   letter-spacing: 0.8px !important;
   margin-bottom: 4px !important;
   position: static !important;
+  width: auto !important;
 }
 .card-title {
   font-size: 12px; font-weight: 700; color: var(--text);

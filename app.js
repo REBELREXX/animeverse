@@ -645,9 +645,9 @@ function renderCard(anime, isScroll = false) {
       <img class="card-thumb"
         src="${imgSrc}" alt="${anime.title}"
         onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'"/>
-      <span class="card-badge-overlay">${(anime.type||'ANIME').toUpperCase()}</span>
     </div>
     <div class="card-info">
+      <span class="card-badge">${(anime.type||'ANIME').toUpperCase()}</span>
       <div class="card-title">${anime.title}</div>
       <div class="card-meta">
         <span class="card-rating">

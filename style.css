@@ -426,12 +426,19 @@ a { text-decoration: none; color: inherit; }
   flex: 1;
 }
 .card-badge, .card-badge-overlay {
-  display: inline-block;
-  background: var(--accent); color: #fff;
-  font-size: 9px; font-weight: 800;
-  padding: 3px 8px; border-radius: 5px;
-  text-transform: uppercase; letter-spacing: 0.8px;
-  margin-bottom: 4px;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: var(--accent) !important;
+  color: #fff !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  margin-bottom: 4px !important;
+  position: static !important;
 }
 .card-title {
   font-size: 12px; font-weight: 700; color: var(--text);

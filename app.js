@@ -641,17 +641,13 @@ function renderCard(anime, isScroll = false) {
 
   const imgSrc = anime.banner || anime.thumbnail || '';
   div.innerHTML = `
-    <div style="position:relative">
+    <div style="position:relative;overflow:hidden">
       <img class="card-thumb"
         src="${imgSrc}" alt="${anime.title}"
         onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'"/>
-      <button class="wishlist-btn" id="wl-${anime.firestoreId}"
-        onclick="event.stopPropagation();handleWishlistToggle('${anime.firestoreId}',this)">
-        <i class="fas fa-heart"></i>
-      </button>
+      <span class="card-badge-overlay">${(anime.type||'ANIME').toUpperCase()}</span>
     </div>
     <div class="card-info">
-      <span class="card-badge">${(anime.type||'ANIME').toUpperCase()}</span>
       <div class="card-title">${anime.title}</div>
       <div class="card-meta">
         <span class="card-rating">

@@ -727,14 +727,18 @@
 
     async function recordView(animeId) {
       try {
-        // Session-based throttle — one increment per session per anime
         const sessKey = 'av_viewed_' + animeId;
         if (sessionStorage.getItem(sessKey)) return;
         sessionStorage.setItem(sessKey, '1');
 
-        const inc = Math.floor(Math.random() * 151) + 100; // 100-250
-        const ref  = db.collection('anime').doc(animeId);
+        const ref     = db.collection('anime').doc(animeId);
+        const current = await ref.get();
+        const curViews = current.exists ? (current.data().views || 0) : 0;
 
+        // First time this anime is ever visited — seed big fake base
+        const inc = curViews === 0
+          ? Math.floor(Math.random() * 6001) + 10000  // 10k-16k seed
+          : Math.floor(Math.random() * 151) + 100;    // 100-250 normal increment
         await db.runTransaction(async tx => {
           const doc = await tx.get(ref);
           if (!doc.exists) return;
@@ -956,6 +960,30 @@
     }
 
     // ── LOAD REACTIONS ──
+    // ── AUTO SEED ──
+    const _RX_SEED_EMOJIS = ['❤️','🔥','👍','🤩','🥰','😄','👏','💯','⚡'];
+
+    function autoSeedReactions(packId, display, hint) {
+      // Only seed once per packId per session to avoid race conditions
+      const key = 'rx_seeded_' + packId;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+
+      const shuffled = [..._RX_SEED_EMOJIS].sort(() => Math.random() - 0.5);
+      const count    = 8 + Math.floor(Math.random() * 2); // 8 or 9 emojis
+      const chosen   = shuffled.slice(0, count);
+      const data     = { userPicks: {} };
+      chosen.forEach((e, i) => {
+        data[e] = i === 0
+          ? Math.floor(Math.random() * 2701) + 2800  // 2800-5500 for top
+          : Math.floor(Math.random() * 2001) + 1200; // 1200-3200 rest
+      });
+
+      db.collection('reactions').doc(packId).set(data, { merge: true })
+        .then(() => loadReactions(packId, display))
+        .catch(console.error);
+    }
+
     function loadReactions(packId, display) {
       if (!display) return;
       db.collection('reactions').doc(packId).get().then(doc => {
@@ -973,7 +1001,8 @@
         display.innerHTML = '';
         const hint = display.closest('.reactions-zone')?.querySelector('.rx-hold-hint');
         if (Object.keys(counts).length === 0) {
-          if (hint) hint.style.display = 'flex';
+          // Auto-seed on first load
+          autoSeedReactions(packId, display, hint);
           return;
         }
         if (hint) hint.style.display = 'none';

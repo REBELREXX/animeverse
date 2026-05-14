@@ -1207,3 +1207,138 @@ window.avResend                   = avResend;
     }, { merge: true }).catch(() => {});
   } catch(e) {}
 })();
+
+// ================================================
+// 🔥 PREMIUM UI UPGRADES — Graphics & Animations
+// ================================================
+
+// ── Scroll Progress Bar ──
+(function initScrollProgress() {
+  const bar = document.createElement('div');
+  bar.id = 'scrollProgressBar';
+  document.body.appendChild(bar);
+
+  function updateBar() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateBar, { passive: true });
+  updateBar();
+})();
+
+// ── Ripple Effect on Buttons ──
+(function initRipple() {
+  document.addEventListener('pointerdown', function(e) {
+    const btn = e.target.closest('.btn-primary, .btn-outline, .icon-btn, .menu-btn, .pill, .season-tab, .lang-btn, .quality-btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 2;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple-wave';
+    ripple.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${e.clientX - rect.left - size/2}px;
+      top: ${e.clientY - rect.top - size/2}px;
+    `;
+    btn.style.position = 'relative';
+    btn.style.overflow = 'hidden';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  }, { passive: true });
+})();
+
+// ── Card Tilt 3D on Mouse Move (mobile: skip) ──
+(function initCardTilt() {
+  if (window.matchMedia('(hover: none)').matches) return; // touch-only devices skip
+  document.addEventListener('mousemove', function(e) {
+    const card = e.target.closest('.card');
+    if (!card) {
+      // Reset all cards when mouse leaves
+      document.querySelectorAll('.card[data-tilted]').forEach(c => {
+        c.style.transform = '';
+        c.removeAttribute('data-tilted');
+      });
+      return;
+    }
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width  - 0.5; // -0.5 to 0.5
+    const y = (e.clientY - rect.top)  / rect.height - 0.5;
+    card.style.transform = `translateY(-8px) scale(1.02) rotateY(${x * 6}deg) rotateX(${-y * 4}deg)`;
+    card.setAttribute('data-tilted', '1');
+  }, { passive: true });
+
+  document.addEventListener('mouseleave', function(e) {
+    if (e.target.classList && e.target.classList.contains('card')) {
+      e.target.style.transform = '';
+      e.target.removeAttribute('data-tilted');
+    }
+  }, true);
+})();
+
+// ── Intersection Observer — Staggered section reveals ──
+(function initSectionReveal() {
+  if (!('IntersectionObserver' in window)) return;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.animationPlayState = 'running';
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  // Observe all cards that enter viewport
+  function observeCards() {
+    document.querySelectorAll('.card:not([data-observed])').forEach(card => {
+      card.setAttribute('data-observed', '1');
+      obs.observe(card);
+    });
+  }
+  observeCards();
+  // Re-observe when new cards are injected
+  const mo = new MutationObserver(observeCards);
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
+
+// ── Smooth Number Counter for stats ──
+window.animateCount = function(el, target, duration) {
+  let start = 0;
+  const step = Math.ceil(target / (duration / 16));
+  const timer = setInterval(() => {
+    start += step;
+    if (start >= target) { el.textContent = target; clearInterval(timer); return; }
+    el.textContent = start;
+  }, 16);
+};
+
+// ── Card image lazy loading with fade-in ──
+(function initLazyImages() {
+  if (!('IntersectionObserver' in window)) return;
+  const imgObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+      }
+      img.style.opacity = '1';
+      imgObs.unobserve(img);
+    });
+  }, { rootMargin: '100px' });
+
+  function observeImgs() {
+    document.querySelectorAll('img.card-thumb:not([data-lazy-observed])').forEach(img => {
+      img.setAttribute('data-lazy-observed', '1');
+      img.style.transition = 'opacity 0.4s ease';
+      imgObs.observe(img);
+    });
+  }
+  observeImgs();
+  const mo = new MutationObserver(observeImgs);
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
+
+console.log('🔥 AnimeVerse Premium UI loaded');

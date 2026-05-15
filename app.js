@@ -647,7 +647,7 @@ function renderCard(anime, isScroll = false) {
         onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'"/>
     </div>
     <div class="card-info">
-      <span class="card-badge">${(anime.type||'ANIME').toUpperCase()}</span>
+      <span class="card-badge" data-type="${(anime.type||'ANIME').toUpperCase()}">${(anime.type||'ANIME').toUpperCase()}</span>
       <div class="card-title">${anime.title}</div>
       <div class="card-meta">
         <span class="card-rating">

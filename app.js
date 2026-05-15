@@ -720,6 +720,23 @@ function renderPaginatedView(items, page, gridId, label) {
 
   const titleEl = document.getElementById('pageSectionTitle');
   if (titleEl && label) titleEl.textContent = label;
+
+  // Update section icon per category
+  const iconEl = document.getElementById('pageSectionIcon');
+  if (iconEl) {
+    const icons = {
+      all:    { icon: 'fa-layer-group',     color: '#758BFD' },
+      anime:  { icon: 'fa-dragon',          color: '#e84393' },
+      movie:  { icon: 'fa-film',            color: '#f97316' },
+      series: { icon: 'fa-tv',              color: '#22d3ee' },
+      news:   { icon: 'fa-newspaper',       color: '#a78bfa' },
+    };
+    const cfg = icons[currentCategory] || icons.all;
+    iconEl.style.background = cfg.color;
+    iconEl.style.boxShadow = `0 4px 16px ${cfg.color}55, 0 4px 0 rgba(0,0,0,0.3)`;
+    iconEl.innerHTML = `<i class="fas ${cfg.icon}" style="color:#fff;font-size:15px"></i>`;
+  }
+
   renderPageButtons(safeP, totalPages);
 }
 

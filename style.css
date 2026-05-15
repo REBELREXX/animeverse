@@ -328,7 +328,7 @@ a { text-decoration: none; color: inherit; }
     gap: 10px !important;
   }
   .card-info { padding: 8px 8px 10px !important; }
-  .card-title { font-size: 12px !important; -webkit-line-clamp: 2 !important; min-height: calc(1.35em * 2) !important; max-height: calc(1.35em * 2) !important; }
+  .card-title { font-size: 12px !important; -webkit-line-clamp: 2 !important; min-height: calc(1.4em * 2) !important; max-height: calc(1.4em * 2) !important; height: calc(1.4em * 2) !important; }
   .card-badge { font-size: 9px !important; padding: 3px 8px !important; }
   .card-meta { font-size: 11px !important; }
 }
@@ -2120,3 +2120,87 @@ body::after {
     -webkit-text-fill-color: var(--text) !important;
   }
 }
+
+/* ============================================================
+   ✨ SAFE ANIMATION UPGRADES — No theme conflicts
+   ============================================================ */
+
+/* Card 3D lift on hover */
+.card {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.25s ease,
+              border-color 0.2s ease !important;
+  will-change: transform;
+}
+.card:hover {
+  transform: translateY(-5px) scale(1.02) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.4),
+              0 0 0 1.5px var(--accent) !important;
+}
+.card:active { transform: translateY(-1px) scale(0.98) !important; }
+
+/* Image smooth zoom */
+.card-thumb {
+  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1) !important;
+}
+.card:hover .card-thumb { transform: scale(1.08) !important; }
+
+/* Star pop on card hover */
+.card:hover .card-rating i {
+  animation: starPop2 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  display: inline-block;
+}
+@keyframes starPop2 {
+  0%   { transform: scale(1) rotate(0deg); }
+  50%  { transform: scale(1.5) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Icon button tap ripple */
+.icon-btn { position: relative; overflow: hidden; }
+.icon-btn::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%);
+  transform: scale(0); opacity: 0;
+  transition: transform 0.4s, opacity 0.4s;
+  pointer-events: none;
+}
+.icon-btn:active::after { transform: scale(2.5); opacity: 1; transition: 0s; }
+
+/* Scroll row fade edges */
+.scroll-row {
+  -webkit-mask-image: linear-gradient(
+    to right, transparent 0%, black 4%, black 96%, transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right, transparent 0%, black 4%, black 96%, transparent 100%
+  );
+}
+
+/* Watch Now / action buttons shimmer sweep */
+.action-btn, .watch-btn, .season-tg-btn-main {
+  position: relative; overflow: hidden;
+}
+.action-btn::before, .watch-btn::before, .season-tg-btn-main::before {
+  content: '';
+  position: absolute; top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.5s;
+  pointer-events: none;
+}
+.action-btn:hover::before, .watch-btn:hover::before, .season-tg-btn-main:hover::before {
+  left: 140%;
+}
+
+/* Reaction pill bounce */
+.rx-pill {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.2s !important;
+}
+.rx-pill:hover { transform: scale(1.15) translateY(-2px) !important; }
+
+/* Smooth page load */
+html { scroll-behavior: smooth; }
